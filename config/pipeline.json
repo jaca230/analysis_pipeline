@@ -1,0 +1,20 @@
+{
+  "pipeline": [
+    {
+      "id": "stage0",
+      "type": "DummyStage",
+      "parameters": {
+        "message": "Hello from stage0"
+      },
+      "next": ["stage1"]
+    },
+    {
+      "id": "stage1",
+      "type": "DummyStage",
+      "parameters": {
+        "message": "Hello from stage1"
+      },
+      "next": []
+    }
+  ]
+}
