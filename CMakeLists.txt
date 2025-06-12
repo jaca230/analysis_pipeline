@@ -33,8 +33,26 @@ if(NOT TBB_FOUND)
     message(FATAL_ERROR "TBB not found. On Ubuntu, run: sudo apt install libtbb-dev")
 endif()
 
-# === ROOT dictionary generation for stages ===
+# FetchContent module
+include(FetchContent)
 
+# spdlog
+FetchContent_Declare(
+  spdlog
+  GIT_REPOSITORY https://github.com/gabime/spdlog.git
+  GIT_TAG v1.13.0
+)
+FetchContent_MakeAvailable(spdlog)
+
+# nlohmann/json
+FetchContent_Declare(
+  json
+  GIT_REPOSITORY https://github.com/nlohmann/json.git
+  GIT_TAG v3.11.3
+)
+FetchContent_MakeAvailable(json)
+
+# ROOT dictionary generation for stages
 set(STAGE_HEADERS
   ${CMAKE_SOURCE_DIR}/include/stages/base_stage.h
   ${CMAKE_SOURCE_DIR}/include/stages/dummy_stage.h
@@ -45,7 +63,7 @@ ROOT_GENERATE_DICTIONARY(G__Stages
   LINKDEF ${CMAKE_SOURCE_DIR}/include/stages/LinkDef.h
 )
 
-# Create a shared library for stages (including dictionary)
+# Create shared library for stages (including dictionary)
 add_library(stages_dict SHARED
   ${CMAKE_SOURCE_DIR}/src/stages/base_stage.cpp
   ${CMAKE_SOURCE_DIR}/src/stages/dummy_stage.cpp
@@ -53,15 +71,24 @@ add_library(stages_dict SHARED
 )
 
 target_include_directories(stages_dict PUBLIC ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(stages_dict PUBLIC ROOT::Core ROOT::RIO ROOT::Tree)
+
+target_link_libraries(stages_dict PUBLIC
+  ROOT::Core ROOT::RIO ROOT::Tree
+  spdlog::spdlog
+)
 
 # Main executable target
 add_executable(analysis_pipeline src/main.cpp ${SRC_FILES})
 
-# Link ROOT, TBB, and stages dictionary library
-target_link_libraries(analysis_pipeline PRIVATE ${ROOT_LIBRARIES} TBB::tbb stages_dict)
+target_link_libraries(analysis_pipeline PRIVATE
+  ${ROOT_LIBRARIES}
+  TBB::tbb
+  stages_dict
+  spdlog::spdlog
+  nlohmann_json::nlohmann_json
+)
 
-# Install rule
+# Install rules
 install(TARGETS analysis_pipeline stages_dict
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib

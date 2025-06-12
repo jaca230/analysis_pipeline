@@ -1,5 +1,5 @@
 #include "dummy_stage.h"
-#include <iostream>
+#include <spdlog/spdlog.h>
 #include <chrono>
 #include <thread>
 #include <iomanip>  // for put_time
@@ -9,9 +9,8 @@ DummyStage::DummyStage() = default;
 DummyStage::~DummyStage() = default;
 
 void DummyStage::OnInit() {
-    std::cout << "[DummyStage] OnInit called with config: " << parameters_.dump() << std::endl;
+    spdlog::debug("[{}] OnInit called with config: {}", Name(), parameters_.dump());
 }
-
 
 void DummyStage::Process() {
     auto now = std::chrono::system_clock::now();
@@ -19,10 +18,15 @@ void DummyStage::Process() {
     auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
         now.time_since_epoch()) % 1000;
 
-    std::cout << "[" << Name() << "] Process started at "
-              << std::put_time(std::localtime(&now_c), "%F %T") << "."
-              << std::setfill('0') << std::setw(3) << now_ms.count()
-              << " with config: " << parameters_.dump() << std::endl;
+    // Format time to string first
+    std::stringstream ss_start;
+    ss_start << std::put_time(std::localtime(&now_c), "%F %T");
+
+    spdlog::info("[{}] Process started at {}.{:03} with config: {}",
+                 Name(),
+                 ss_start.str(),
+                 static_cast<int>(now_ms.count()),
+                 parameters_.dump());
 
     if (parameters_.contains("sleep_ms")) {
         int sleep_time = parameters_["sleep_ms"].get<int>();
@@ -34,11 +38,17 @@ void DummyStage::Process() {
     now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
         now.time_since_epoch()) % 1000;
 
-    std::cout << "[" << Name() << "] Process finished at "
-              << std::put_time(std::localtime(&now_c), "%F %T") << "."
-              << std::setfill('0') << std::setw(3) << now_ms.count()
-              << " with config: " << parameters_.dump() << std::endl;
+    // Format time to string again
+    std::stringstream ss_end;
+    ss_end << std::put_time(std::localtime(&now_c), "%F %T");
+
+    spdlog::info("[{}] Process finished at {}.{:03} with config: {}",
+                 Name(),
+                 ss_end.str(),
+                 static_cast<int>(now_ms.count()),
+                 parameters_.dump());
 }
+
 
 std::string DummyStage::Name() const {
     return "DummyStage";

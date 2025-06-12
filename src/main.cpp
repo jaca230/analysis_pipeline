@@ -1,31 +1,43 @@
 #include <iostream>
-#include <string>
 #include <filesystem>
-
-#include "config_parser.h"
+#include <memory>
+#include "config_manager.h"
 #include "pipeline.h"
 
 int main(int argc, char** argv) {
-    // Get the directory of the source file (compile-time constant)
-    std::filesystem::path sourcePath = __FILE__;  // e.g., /home/user/project/src/main.cpp
-    std::filesystem::path configPath = sourcePath.parent_path().parent_path() / "config" / "pipeline.json";
+    // Determine default config file locations relative to source
+    std::filesystem::path sourcePath = __FILE__;
+    std::filesystem::path configDir = sourcePath.parent_path().parent_path() / "config";
 
-    std::cout << "Using default config at: " << configPath << "\n";
+    // You could also allow command line overrides here if needed
+    std::vector<std::string> configPaths = {
+        (configDir / "logger.json").string(),
+        (configDir / "pipeline.json").string()
+    };
 
-    ConfigParser parser;
-    if (!parser.parseFile(configPath.string())) {
-        std::cerr << "Failed to parse pipeline config.\n";
+    // Create shared ConfigManager instance
+    auto configManager = std::make_shared<ConfigManager>();
+
+    // Load configuration files (includes build)
+    if (!configManager->loadFiles(configPaths)) {
+        std::cerr << "Error: Failed to load and build configuration." << std::endl;
         return 1;
     }
 
-    Pipeline pipeline;
-    if (!pipeline.buildFromConfig(parser.getStages())) {
-        std::cerr << "Failed to build pipeline from config.\n";
+    // Optional: validate configuration
+    if (!configManager->validate()) {
+        std::cerr << "Error: Configuration validation failed." << std::endl;
+        return 1;
+    }
+
+    // Build and run pipeline
+    Pipeline pipeline(configManager);
+    if (!pipeline.buildFromConfig()) {
+        std::cerr << "Error: Failed to build pipeline." << std::endl;
         return 1;
     }
 
     pipeline.execute();
 
-    std::cout << "Pipeline execution complete.\n";
     return 0;
 }

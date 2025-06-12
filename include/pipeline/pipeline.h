@@ -5,34 +5,36 @@
 #include <map>
 #include <memory>
 #include <vector>
+#include <optional>
 #include <tbb/flow_graph.h>
 #include <TObject.h>
-#include "config_parser.h"
-#include "base_stage.h" 
+#include "config_manager.h"  // Use ConfigManager instead of raw configs
+#include "base_stage.h"
 
 class Pipeline {
 public:
-    Pipeline() = default;
-    bool buildFromConfig(const std::vector<StageConfig>& stages);
+    // Pipeline requires a ConfigManager reference to be constructed
+    explicit Pipeline(std::shared_ptr<ConfigManager> configManager);
+
+    // Build graph from the current config manager's loaded config
+    bool buildFromConfig();
+
     void execute();
+
+    // Getters and setters for config manager
+    std::shared_ptr<ConfigManager> getConfigManager() const;
+    void setConfigManager(std::shared_ptr<ConfigManager> configManager);
 
 private:
     tbb::flow::graph graph_;
-
-    // Store nodes by id
     std::map<std::string, std::unique_ptr<tbb::flow::continue_node<tbb::flow::continue_msg>>> nodes_;
-
-    // Track incoming edge counts for each node id
     std::map<std::string, int> incomingCount_;
-
-    // Cached start nodes (zero incoming edges), set once after buildFromConfig()
     std::vector<std::string> startNodes_;
 
-    // Helper to create BaseStage instance
-    BaseStage* createStageInstance(const std::string& type, const nlohmann::json& params);
+    std::shared_ptr<ConfigManager> configManager_;
 
-    // Helper to find nodes with zero incoming edges (start nodes)
-    std::vector<std::string> findStartNodes() const;
+    BaseStage* createStageInstance(const std::string& type, const nlohmann::json& params);
+    void configureLogger(const nlohmann::json& loggerConfig);
 };
 
 #endif // ANALYSISPIPELINE_PIPELINE_H
