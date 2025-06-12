@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Set output directory for binaries
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# Include paths
+# Include paths for your own project headers
 file(GLOB_RECURSE ALL_INCLUDE_PATHS LIST_DIRECTORIES true ${CMAKE_SOURCE_DIR}/include/*)
 foreach(path ${ALL_INCLUDE_PATHS})
     if(IS_DIRECTORY ${path})
@@ -16,27 +16,22 @@ foreach(path ${ALL_INCLUDE_PATHS})
     endif()
 endforeach()
 
-# Source files
-file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS src/*.cpp)
-file(GLOB_RECURSE HEADER_FILES CONFIGURE_DEPENDS include/**/*.h)
-
-# ROOT
+# Find ROOT
 find_package(ROOT REQUIRED COMPONENTS Tree Core Hist RIO)
 if(NOT ROOT_FOUND)
     message(FATAL_ERROR "ROOT not found. Make sure to source ROOT (e.g. 'source thisroot.sh').")
 endif()
 include(${ROOT_USE_FILE})
 
-# Intel TBB
+# Find Intel TBB
 find_package(TBB REQUIRED)
 if(NOT TBB_FOUND)
     message(FATAL_ERROR "TBB not found. On Ubuntu, run: sudo apt install libtbb-dev")
 endif()
 
-# FetchContent module
+# FetchContent for spdlog and nlohmann/json
 include(FetchContent)
 
-# spdlog
 FetchContent_Declare(
   spdlog
   GIT_REPOSITORY https://github.com/gabime/spdlog.git
@@ -44,7 +39,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(spdlog)
 
-# nlohmann/json
 FetchContent_Declare(
   json
   GIT_REPOSITORY https://github.com/nlohmann/json.git
@@ -52,44 +46,27 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(json)
 
-# ROOT dictionary generation for stages
-set(STAGE_HEADERS
-  ${CMAKE_SOURCE_DIR}/include/stages/base_stage.h
-  ${CMAKE_SOURCE_DIR}/include/stages/dummy_stage.h
-)
+# Add external submodule library
+add_subdirectory(external/analysis_pipeline_stages)
 
-ROOT_GENERATE_DICTIONARY(G__Stages
-  ${STAGE_HEADERS}
-  LINKDEF ${CMAKE_SOURCE_DIR}/include/stages/LinkDef.h
-)
-
-# Create shared library for stages (including dictionary)
-add_library(stages_dict SHARED
-  ${CMAKE_SOURCE_DIR}/src/stages/base_stage.cpp
-  ${CMAKE_SOURCE_DIR}/src/stages/dummy_stage.cpp
-  G__Stages.cxx
-)
-
-target_include_directories(stages_dict PUBLIC ${CMAKE_SOURCE_DIR}/include)
-
-target_link_libraries(stages_dict PUBLIC
-  ROOT::Core ROOT::RIO ROOT::Tree
-  spdlog::spdlog
-)
+# Source files for main executable
+file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS src/*.cpp)
 
 # Main executable target
 add_executable(analysis_pipeline src/main.cpp ${SRC_FILES})
 
+# Link main executable to libraries
 target_link_libraries(analysis_pipeline PRIVATE
   ${ROOT_LIBRARIES}
   TBB::tbb
-  stages_dict
+  analysis_pipeline_stages     # <-- submodule library target
   spdlog::spdlog
   nlohmann_json::nlohmann_json
 )
 
+# Include submodule headers (if not already included by the submodule's CMake)
+target_include_directories(analysis_pipeline PRIVATE external/analysis_pipeline_stages/include)
+
 # Install rules
-install(TARGETS analysis_pipeline stages_dict
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib)
+install(TARGETS analysis_pipeline
+        RUNTIME DESTINATION bin)

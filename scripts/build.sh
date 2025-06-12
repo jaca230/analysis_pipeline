@@ -1,56 +1,83 @@
 #!/bin/bash
 
-# Get the absolute path of the script directory
-SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-BASE_DIR="$SCRIPT_DIR/.."
+# Resolve absolute paths
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+BASE_DIR=$(realpath "$SCRIPT_DIR/..")
 BUILD_DIR="$BASE_DIR/build"
+SUBMODULE_BUILD_SCRIPT="$BASE_DIR/scripts/submodules/build_submodules.sh"
+CLEANUP_SCRIPT="$SCRIPT_DIR/cleanup.sh"
 
 # Default flags
 OVERWRITE=false
-JOBS_ARG="-j"  # Default: use all processors
+OVERWRITE_SUBMODULES=false
+JOBS_ARG="-j"  # Use all processors
 
 # Help message
 show_help() {
     echo "Usage: ./build.sh [OPTIONS]"
     echo
     echo "Options:"
-    echo "  -o, --overwrite         Remove existing build directory before building"
-    echo "  -j, --jobs <number>     Specify number of processors to use (default: all available)"
-    echo "  -h, --help              Display this help message"
+    echo "  -o, --overwrite              Remove existing build directory before building"
+    echo "  -s, --overwrite-submodules   Also clean and rebuild all submodules"
+    echo "  -j, --jobs <number>          Specify number of processors to use (default: all available)"
+    echo "  -h, --help                   Display this help message"
 }
 
 # Parse arguments
+SUBMODULE_ARGS=()
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        -o|--overwrite) OVERWRITE=true; shift ;;
+        -o|--overwrite)
+            OVERWRITE=true
+            shift
+            ;;
+        -s|--overwrite-submodules)
+            OVERWRITE_SUBMODULES=true
+            SUBMODULE_ARGS+=("--overwrite")
+            shift
+            ;;
         -j|--jobs)
             if [[ -n "$2" && "$2" != -* ]]; then
                 JOBS_ARG="-j$2"
+                SUBMODULE_ARGS+=("--jobs" "$2")
                 shift 2
             else
-                JOBS_ARG="-j"  # Use all processors
+                JOBS_ARG="-j"
+                SUBMODULE_ARGS+=("--jobs")
                 shift
             fi
             ;;
-        -h|--help) show_help; exit 0 ;;
-        *) echo "[build.sh, ERROR] Unknown option: $1"; show_help; exit 1 ;;
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        *)
+            echo "[build.sh, ERROR] Unknown option: $1"
+            show_help
+            exit 1
+            ;;
     esac
 done
 
+# Build submodules
+echo "[build.sh] Invoking submodule build script: $SUBMODULE_BUILD_SCRIPT"
+"$SUBMODULE_BUILD_SCRIPT" "${SUBMODULE_ARGS[@]}"
+
+# Optionally clean current project build
 if [ "$OVERWRITE" = true ]; then
-    echo "[build.sh, INFO] Overwrite enabled: Cleaning previous build..."
-    "$SCRIPT_DIR/cleanup.sh"
+    echo "[build.sh] Cleaning previous build with: $CLEANUP_SCRIPT"
+    "$CLEANUP_SCRIPT"
 fi
 
-# Create the build directory if it doesn't exist
+# Create and enter build directory
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR" || exit 1
 
 # Run CMake and Make
-echo "[build.sh, INFO] Configuring the project with CMake..."
+echo "[build.sh] Running cmake in: $BUILD_DIR"
 cmake "$BASE_DIR"
 
-echo "[build.sh, INFO] Building the project with 'make $JOBS_ARG'..."
+echo "[build.sh] Building with make $JOBS_ARG"
 make $JOBS_ARG
 
-echo "[build.sh, INFO] Build complete. Executables are in: $BUILD_DIR/bin/"
+echo "[build.sh] Build complete. Executables are in: $BUILD_DIR/bin/"

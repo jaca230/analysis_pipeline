@@ -6,24 +6,27 @@
 #include <memory>
 #include <vector>
 #include <optional>
+#include <mutex>
 #include <tbb/flow_graph.h>
 #include <TObject.h>
+#include <TTree.h>
 #include "config_manager.h"  // Use ConfigManager instead of raw configs
 #include "base_stage.h"
 
 class Pipeline {
 public:
-    // Pipeline requires a ConfigManager reference to be constructed
     explicit Pipeline(std::shared_ptr<ConfigManager> configManager);
 
-    // Build graph from the current config manager's loaded config
     bool buildFromConfig();
 
     void execute();
 
-    // Getters and setters for config manager
     std::shared_ptr<ConfigManager> getConfigManager() const;
     void setConfigManager(std::shared_ptr<ConfigManager> configManager);
+
+    // Thread-safe accessors for the owned TTree
+    TTree* getTree() const;
+    void setTree(TTree* tree);
 
 private:
     tbb::flow::graph graph_;
@@ -32,6 +35,10 @@ private:
     std::vector<std::string> startNodes_;
 
     std::shared_ptr<ConfigManager> configManager_;
+
+    // Own the TTree and mutex for thread safety
+    TTree* tree_ = nullptr;
+    mutable std::mutex tree_mutex_;
 
     BaseStage* createStageInstance(const std::string& type, const nlohmann::json& params);
     void configureLogger(const nlohmann::json& loggerConfig);
