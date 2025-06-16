@@ -9,7 +9,7 @@ CLEANUP_SCRIPT="$SCRIPT_DIR/cleanup.sh"
 
 # Default flags
 OVERWRITE=false
-OVERWRITE_SUBMODULES=false
+RECURSIVE_OVERWRITE=false
 JOBS_ARG="-j"  # Use all processors
 
 # Help message
@@ -18,7 +18,7 @@ show_help() {
     echo
     echo "Options:"
     echo "  -o, --overwrite              Remove existing build directory before building"
-    echo "  -s, --overwrite-submodules   Also clean and rebuild all submodules"
+    echo "  -r, --recursive-overwrite    Also clean and rebuild all submodules recursively"
     echo "  -j, --jobs <number>          Specify number of processors to use (default: all available)"
     echo "  -h, --help                   Display this help message"
 }
@@ -31,9 +31,9 @@ while [[ "$#" -gt 0 ]]; do
             OVERWRITE=true
             shift
             ;;
-        -s|--overwrite-submodules)
-            OVERWRITE_SUBMODULES=true
-            SUBMODULE_ARGS+=("--overwrite")
+        -r|--recursive-overwrite)
+            RECURSIVE_OVERWRITE=true
+            SUBMODULE_ARGS+=("--recursive-overwrite")
             shift
             ;;
         -j|--jobs)
@@ -59,6 +59,11 @@ while [[ "$#" -gt 0 ]]; do
     esac
 done
 
+# If recursive overwrite is enabled, we also clean the current build
+if [ "$RECURSIVE_OVERWRITE" = true ]; then
+    OVERWRITE=true
+fi
+
 # Build submodules
 echo "[build.sh] Invoking submodule build script: $SUBMODULE_BUILD_SCRIPT"
 "$SUBMODULE_BUILD_SCRIPT" "${SUBMODULE_ARGS[@]}"
@@ -75,9 +80,11 @@ cd "$BUILD_DIR" || exit 1
 
 # Run CMake and Make
 echo "[build.sh] Running cmake in: $BUILD_DIR"
-cmake "$BASE_DIR"
+cmake -DCMAKE_CXX_FLAGS="-Wno-cpp" "$BASE_DIR"
 
 echo "[build.sh] Building with make $JOBS_ARG"
 make $JOBS_ARG
 
-echo "[build.sh] Build complete. Executables are in: $BUILD_DIR/bin/"
+echo "[build.sh] Build complete."
+echo "[build.sh] Executables are in: $BUILD_DIR/bin/"
+echo "[build.sh] Libraries are in: $BUILD_DIR/lib/"
