@@ -1,4 +1,4 @@
-#include "config_manager.h"
+#include "config/config_manager.h"
 #include <iostream>
 
 ConfigManager::ConfigManager() : mergedJson_(nlohmann::json::object()) {}

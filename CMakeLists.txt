@@ -1,32 +1,38 @@
 cmake_minimum_required(VERSION 3.14)
 project(AnalysisPipeline VERSION 0.1 LANGUAGES CXX)
 
-# Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Set output directory for binaries
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# Include paths for your own project headers
-file(GLOB_RECURSE ALL_INCLUDE_PATHS LIST_DIRECTORIES true ${CMAKE_SOURCE_DIR}/include/*)
-foreach(path ${ALL_INCLUDE_PATHS})
-    if(IS_DIRECTORY ${path})
-        include_directories(${path})
-    endif()
-endforeach()
+# Check MIDASSYS environment variable
+if(NOT DEFINED ENV{MIDASSYS})
+  message(FATAL_ERROR
+    "Environment variable MIDASSYS not set.\n"
+    "Please source your MIDAS environment or run the detect_environment.sh script:\n"
+    "  ./scripts/environment/detect_environment.sh\n"
+    "  source ./scripts/environment/.env"
+  )
+endif()
+
+set(MIDASSYS_INCLUDE_DIRS
+  $ENV{MIDASSYS}/include
+  $ENV{MIDASSYS}/midasio
+)
+set(MIDASSYS_LIB_DIR $ENV{MIDASSYS}/lib)
 
 # Find ROOT
 find_package(ROOT REQUIRED COMPONENTS Tree Core Hist RIO)
 if(NOT ROOT_FOUND)
-    message(FATAL_ERROR "ROOT not found. Make sure to source ROOT (e.g. 'source thisroot.sh').")
+  message(FATAL_ERROR "ROOT not found. Make sure to source ROOT (e.g. 'source thisroot.sh').")
 endif()
 include(${ROOT_USE_FILE})
 
-# Find Intel TBB
+# Find TBB
 find_package(TBB REQUIRED)
 if(NOT TBB_FOUND)
-    message(FATAL_ERROR "TBB not found. On Ubuntu, run: sudo apt install libtbb-dev")
+  message(FATAL_ERROR "TBB not found. On Ubuntu, try: sudo apt install libtbb-dev")
 endif()
 
 # FetchContent for spdlog and nlohmann/json
@@ -46,27 +52,45 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(json)
 
-# Add external submodule library
+# Add external submodule for pipeline stages
 add_subdirectory(external/analysis_pipeline_stages)
 
-# Source files for main executable
+# Source files
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS src/*.cpp)
 
 # Main executable target
-add_executable(analysis_pipeline src/main.cpp ${SRC_FILES})
-
-# Link main executable to libraries
-target_link_libraries(analysis_pipeline PRIVATE
-  ${ROOT_LIBRARIES}
-  TBB::tbb
-  analysis_pipeline_stages     # <-- submodule library target
-  spdlog::spdlog
-  nlohmann_json::nlohmann_json
+add_executable(analysis_pipeline
+  src/main.cpp
+  ${SRC_FILES}
 )
 
-# Include submodule headers (if not already included by the submodule's CMake)
-target_include_directories(analysis_pipeline PRIVATE external/analysis_pipeline_stages/include)
+# Include your own project headers (top-level include)
+target_include_directories(analysis_pipeline PRIVATE
+  ${CMAKE_SOURCE_DIR}/include
+)
+
+# Add MIDAS include dirs to target
+target_include_directories(analysis_pipeline PRIVATE
+  ${MIDASSYS_INCLUDE_DIRS}
+)
+
+find_library(MIDAS_LIB
+  NAMES midas
+  PATHS ${MIDASSYS_LIB_DIR}
+  NO_DEFAULT_PATH
+)
+
+# Link libraries
+target_link_libraries(analysis_pipeline PRIVATE
+  ROOT::Core ROOT::RIO ROOT::Tree
+  TBB::tbb
+  analysis_pipeline_stages
+  spdlog::spdlog
+  nlohmann_json::nlohmann_json
+  ${MIDAS_LIB}
+)
 
 # Install rules
 install(TARGETS analysis_pipeline
-        RUNTIME DESTINATION bin)
+  RUNTIME DESTINATION bin
+)

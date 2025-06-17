@@ -2,36 +2,8 @@
   "pipeline": [
     {
       "id": "stage0",
-      "type": "DummyStage",
-      "parameters": {
-        "message": "Hello from stage0"
-      },
-      "next": ["stage1a", "stage1b"]
-    },
-    {
-      "id": "stage1a",
-      "type": "DummyStage",
-      "parameters": {
-        "message": "Hello from stage1a",
-        "sleep_ms": 1000
-      },
-      "next": ["stage2"]
-    },
-    {
-      "id": "stage1b",
-      "type": "DummyStage",
-      "parameters": {
-        "message": "Hello from stage1b",
-        "sleep_ms": 500
-      },
-      "next": ["stage2"]
-    },
-    {
-      "id": "stage2",
-      "type": "DummyStage",
-      "parameters": {
-        "message": "Hello from stage2"
-      },
+      "type": "DefaultMidasUnpackerStage",
+      "parameters": {},
       "next": []
     }
   ]

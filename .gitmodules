@@ -1,3 +1,4 @@
 [submodule "external/analysis_pipeline_stages"]
 	path = external/analysis_pipeline_stages
 	url = https://github.com/jaca230/analysis_pipeline_stages.git
+	branch = midas
