@@ -1,8 +1,8 @@
 #include <iostream>
 #include <filesystem>
 #include <memory>
-#include "config_manager.h"
-#include "pipeline.h"
+#include "config/config_manager.h"
+#include "pipeline/pipeline.h"
 
 int main(int argc, char** argv) {
     // Determine default config file locations relative to source

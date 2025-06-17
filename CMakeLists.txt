@@ -8,14 +8,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Set output directory for binaries
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# Include paths for your own project headers
-file(GLOB_RECURSE ALL_INCLUDE_PATHS LIST_DIRECTORIES true ${CMAKE_SOURCE_DIR}/include/*)
-foreach(path ${ALL_INCLUDE_PATHS})
-    if(IS_DIRECTORY ${path})
-        include_directories(${path})
-    endif()
-endforeach()
-
 # Find ROOT
 find_package(ROOT REQUIRED COMPONENTS Tree Core Hist RIO)
 if(NOT ROOT_FOUND)
@@ -46,7 +38,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(json)
 
-# Add external submodule library
+# Add external submodule
 add_subdirectory(external/analysis_pipeline_stages)
 
 # Source files for main executable
@@ -55,18 +47,21 @@ file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS src/*.cpp)
 # Main executable target
 add_executable(analysis_pipeline src/main.cpp ${SRC_FILES})
 
+# Include our own top-level include/ and submodule include path
+target_include_directories(analysis_pipeline PRIVATE
+  ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_SOURCE_DIR}/external/analysis_pipeline_stages/include
+)
+
 # Link main executable to libraries
 target_link_libraries(analysis_pipeline PRIVATE
-  ${ROOT_LIBRARIES}
+  ROOT::Core ROOT::RIO ROOT::Tree
   TBB::tbb
-  analysis_pipeline_stages     # <-- submodule library target
+  analysis_pipeline_stages
   spdlog::spdlog
   nlohmann_json::nlohmann_json
 )
 
-# Include submodule headers (if not already included by the submodule's CMake)
-target_include_directories(analysis_pipeline PRIVATE external/analysis_pipeline_stages/include)
-
-# Install rules
+# Install rule
 install(TARGETS analysis_pipeline
         RUNTIME DESTINATION bin)

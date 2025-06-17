@@ -1,4 +1,4 @@
-#include "pipeline.h"
+#include "pipeline/pipeline.h"
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>

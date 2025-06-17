@@ -10,8 +10,8 @@
 #include <tbb/flow_graph.h>
 #include <TObject.h>
 #include <TTree.h>
-#include "config_manager.h"  // Use ConfigManager instead of raw configs
-#include "base_stage.h"
+#include "config/config_manager.h"  // Use ConfigManager instead of raw configs
+#include "stages/base_stage.h"
 
 class Pipeline {
 public:

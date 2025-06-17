@@ -2,7 +2,7 @@
 #define ANALYSIS_PIPELINE_STAGE_NODE_H
 
 #include <tbb/flow_graph.h>
-#include "base_stage.h"
+#include "stages/base_stage.h"
 
 class StageNode {
 public:
