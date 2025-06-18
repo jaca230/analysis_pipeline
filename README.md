@@ -38,7 +38,7 @@ See the [analysis_pipeline_stages](https://github.com/jaca230/analysis_pipeline_
 ### Clone repository with submodules
 
 ```bash
-git clone --recursive https://github.com/yourusername/analysis_pipeline.git
+git clone --recursive https://github.com/jaca230/analysis_pipeline.git
 cd analysis_pipeline
 ```
 
