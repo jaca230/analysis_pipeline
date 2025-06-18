@@ -1,8 +1,13 @@
 # AnalysisPipeline
 
+[![C++17](https://img.shields.io/badge/C++-17-blue.svg)]()
+[![License](https://img.shields.io/badge/license-MIT-green)]()
+
 ## Overview
 
 **AnalysisPipeline** is a modular C++ framework to define and execute analysis pipelines for processing ROOT data. It's main use case is processing MIDAS events into ROOT data products. Pipelines are defined via JSON configurations describing a directed graph of algorithm stages, which are dynamically instantiated from ROOT dictionaries. Execution uses Intel TBB for parallelism and supports thread-safe shared ROOT `TTree` access.
+
+See the [analysis_pipeline_stages](https://github.com/jaca230/analysis_pipeline_stages?tab=readme-ov-file) library for how to make new stages.
 
 ---
 

@@ -66,5 +66,5 @@ echo "[build.sh] Building with make $JOBS_ARG"
 make $JOBS_ARG
 
 echo "[build.sh] Build complete."
-echo "[build.sh] Executables are in: $BUILD_DIR/bin/"
-echo "[build.sh] Libraries are in: $BUILD_DIR/lib/"
+echo "[build.sh] Executables are in: $BUILD_DIR/"
+echo "[build.sh] Libraries are in: $BUILD_DIR/"
