@@ -3,7 +3,7 @@
 # Get the absolute path of the script directory
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 BASE_DIR="$SCRIPT_DIR/.."
-EXECUTABLE="$BASE_DIR/build/bin/analysis_pipeline"
+EXECUTABLE="$BASE_DIR/bin/analysis_pipeline"
 
 # Variables for options
 PRELOAD_LIBS=""
