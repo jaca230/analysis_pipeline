@@ -30,6 +30,6 @@ fi
 # Run make install with sudo
 cd "$BUILD_DIR" || exit 1
 echo "[install.sh] Running 'sudo make install' in: $BUILD_DIR"
-sudo make install
+sudo MIDASSYS=$MIDASSYS make install
 
 echo "[install.sh] Install complete."
