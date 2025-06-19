@@ -27,8 +27,9 @@ See the [analysis_pipeline_stages](https://github.com/jaca230/analysis_pipeline_
 * C++17 compatible compiler
 * [ROOT](https://root.cern/) (with Core, Tree, RIO, Hist components)
 * [Intel TBB](https://github.com/oneapi-src/oneTBB)
-* [spdlog](https://github.com/gabime/spdlog) (included via CMake FetchContent)
-* [nlohmann/json](https://github.com/nlohmann/json) (included via CMake FetchContent)
+* [spdlog](https://github.com/gabime/spdlog)
+* [nlohmann/json](https://github.com/nlohmann/json)
+* [analysis_pipeline_stages](https://github.com/jaca230/analysis_pipeline_stages)
 * CMake 3.14 or higher
 
 ---
