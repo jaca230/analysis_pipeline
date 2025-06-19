@@ -7,7 +7,7 @@
 int main(int argc, char** argv) {
     // Determine default config file locations relative to source
     std::filesystem::path sourcePath = __FILE__;
-    std::filesystem::path configDir = sourcePath.parent_path().parent_path() / "config";
+    std::filesystem::path configDir = sourcePath.parent_path() / "config";
 
     // You could also allow command line overrides here if needed
     std::vector<std::string> configPaths = {
