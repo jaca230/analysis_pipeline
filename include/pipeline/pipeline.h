@@ -6,12 +6,10 @@
 #include <memory>
 #include <vector>
 #include <optional>
-#include <mutex>
 #include <tbb/flow_graph.h>
-#include <TObject.h>
-#include <TTree.h>
-#include "config/config_manager.h"  // Use ConfigManager instead of raw configs
+#include "config/config_manager.h"
 #include "stages/base_stage.h"
+#include "data/pipeline_data_product_manager.h" 
 
 class Pipeline {
 public:
@@ -24,9 +22,8 @@ public:
     std::shared_ptr<ConfigManager> getConfigManager() const;
     void setConfigManager(std::shared_ptr<ConfigManager> configManager);
 
-    // Thread-safe accessors for the owned TTree
-    TTree* getTree() const;
-    void setTree(TTree* tree);
+    // Accessor for the data product manager
+    PipelineDataProductManager& getDataProductManager();
 
 private:
     tbb::flow::graph graph_;
@@ -36,9 +33,8 @@ private:
 
     std::shared_ptr<ConfigManager> configManager_;
 
-    // Own the TTree and mutex for thread safety
-    TTree* tree_ = nullptr;
-    mutable std::mutex tree_mutex_;
+    // Use PipelineDataProductManager instead of raw map+mutex
+    PipelineDataProductManager dataProductManager_;
 
     BaseStage* createStageInstance(const std::string& type, const nlohmann::json& params);
     void configureLogger(const nlohmann::json& loggerConfig);

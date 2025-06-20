@@ -4,30 +4,18 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/basic_file_sink.h>
 
-#include <TClass.h>
-#include <TROOT.h>
-
 #include <mutex>
 
 Pipeline::Pipeline(std::shared_ptr<ConfigManager> configManager)
     : configManager_(std::move(configManager))
-    , tree_(nullptr)
 {}
-
-// Thread-safe getter for TTree*
-TTree* Pipeline::getTree() const {
-    std::lock_guard<std::mutex> lock(tree_mutex_);
-    return tree_;
-}
-
-// Thread-safe setter for TTree*
-void Pipeline::setTree(TTree* tree) {
-    std::lock_guard<std::mutex> lock(tree_mutex_);
-    tree_ = tree;
-}
 
 std::shared_ptr<ConfigManager> Pipeline::getConfigManager() const {
     return configManager_;
+}
+
+PipelineDataProductManager& Pipeline::getDataProductManager() {
+    return dataProductManager_;
 }
 
 void Pipeline::setConfigManager(std::shared_ptr<ConfigManager> configManager) {
@@ -54,8 +42,9 @@ BaseStage* Pipeline::createStageInstance(const std::string& type, const nlohmann
         return nullptr;
     }
 
-    // Pass the owned TTree* and mutex* to Init
-    stage->Init(params, getTree(), &tree_mutex_);
+    // Pass the PipelineDataProductManager to the stage Init
+    stage->Init(params, &dataProductManager_);
+
     return stage;
 }
 
