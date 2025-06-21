@@ -8,26 +8,14 @@
 #include <TROOT.h>
 
 Pipeline::Pipeline(std::shared_ptr<ConfigManager> configManager)
-    : configManager_(std::move(configManager)), tree_(nullptr) {}
-
-TTree* Pipeline::getTree() const {
-    std::lock_guard<std::mutex> lock(tree_mutex_);
-    return tree_;
-}
-
-void Pipeline::setTree(TTree* tree) {
-    std::lock_guard<std::mutex> lock(tree_mutex_);
-    tree_ = tree;
-
-    for (auto& [id, stage] : stages_) {
-        if (stage) {
-            stage->SetTree(tree_, &tree_mutex_);
-        }
-    }
-}
+    : configManager_(std::move(configManager)) {}
 
 std::shared_ptr<ConfigManager> Pipeline::getConfigManager() const {
     return configManager_;
+}
+
+PipelineDataProductManager& Pipeline::getDataProductManager() {
+    return dataProductManager_;
 }
 
 void Pipeline::setConfigManager(std::shared_ptr<ConfigManager> configManager) {
@@ -54,7 +42,7 @@ BaseStage* Pipeline::createStageInstance(const std::string& type, const nlohmann
         return nullptr;
     }
 
-    stage->Init(params, getTree(), &tree_mutex_);
+    stage->Init(params, &dataProductManager_);
     return stage;
 }
 
