@@ -46,5 +46,14 @@ int main(int argc, char** argv) {
         std::cout << jsonData.dump(4) << std::endl;
     }
 
+    
+    // Now clear the data products before exit
+    std::cout << "Clearing all data products..." << std::endl;
+    pipeline.getDataProductManager().clear();
+
+    nlohmann::json clearedJson = pipeline.getDataProductManager().serializeAll();
+    std::cout << "Data products after clearing:" << std::endl;
+    std::cout << clearedJson.dump(4) << std::endl;
+
     return 0;
 }

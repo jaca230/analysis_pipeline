@@ -9,6 +9,20 @@
         "max": 100.0,
         "seed": 1234
       },
+      "next": ["stage1"]
+    },
+    {
+      "id": "stage1",
+      "type": "TH1BuilderStage",
+      "parameters": {
+        "input_product": "random_output",
+        "product_name": "random_hist",
+        "title": "Random Value Histogram",
+        "bins": 50,
+        "min": 0.0,
+        "max": 100.0,
+        "value_key": "fVal"
+      },
       "next": []
     }
   ]
