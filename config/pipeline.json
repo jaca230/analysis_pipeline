@@ -2,8 +2,10 @@
   "pipeline": [
     {
       "id": "stage0",
-      "type": "DefaultMidasUnpackerStage",
-      "parameters": {},
+      "type": "CustomMidasUnpackerStage",
+      "parameters": {
+        "unpacker_class": "unpackers::NaluEventUnpacker"
+      },
       "next": []
     }
   ]
