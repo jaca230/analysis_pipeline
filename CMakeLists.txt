@@ -47,6 +47,9 @@ find_package(nlohmann_json REQUIRED)
 # Find analysis_pipeline_stages - assume installed
 find_package(AnalysisPipelineStages REQUIRED)
 
+# Find unpacker libraries - assume installed
+find_package(unpacker REQUIRED)
+
 # Gather source files, exclude main.cpp
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 list(FILTER SRC_FILES EXCLUDE REGEX "main\\.cpp$")
@@ -77,6 +80,10 @@ target_link_libraries(analysis_pipeline PUBLIC
   spdlog::spdlog
   nlohmann_json::nlohmann_json
   AnalysisPipelineStages::analysis_pipeline_stages
+  unpacker::common_unpacking
+  unpacker::common_data_products
+  unpacker::nalu_unpacking
+  unpacker::nalu_data_products
   ${MIDASSYS_LIB_DIR}/libmfe.a
   ${MIDASSYS_LIB_DIR}/libmidas.a
 )
