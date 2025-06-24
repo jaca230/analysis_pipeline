@@ -138,3 +138,13 @@ if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
 
   export(PACKAGE AnalysisPipeline)
 endif()
+
+# Optionally build the example plugin if it exists
+set(EXAMPLES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/examples/example_plugin")
+
+if(EXISTS "${EXAMPLES_DIR}/CMakeLists.txt")
+  message(STATUS "Found example_plugin submodule, adding as subdirectory.")
+  add_subdirectory(${EXAMPLES_DIR})
+else()
+  message(STATUS "Example plugin submodule not found, skipping example_plugin build.")
+endif()

@@ -1,6 +1,5 @@
 {
   "plugin_libraries": [
-    "/path/to/libcustom_stage1.so",
-    "/path/to/libcustom_stage2.so"
+    "../build/examples/example_plugin/libexample_pipeline_plugin.so"
   ]
 }
