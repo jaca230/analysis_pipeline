@@ -7,8 +7,10 @@
 #include <TClass.h>
 #include <TROOT.h>
 #include <TSystem.h>
+#include <filesystem>
 
 #include "root_util/root_logger.h"
+
 
 Pipeline::Pipeline(std::shared_ptr<ConfigManager> configManager)
     : configManager_(std::move(configManager)) {
@@ -98,11 +100,19 @@ bool Pipeline::buildFromConfig() {
     // 2. Load plugin libraries
     const auto& pluginLibs = configManager_->getPluginLibraries();
     for (const auto& libPath : pluginLibs) {
-        int status = gSystem->Load(libPath.c_str());
+        std::filesystem::path path(libPath);
+        if (path.is_relative()) {
+            // Resolve relative to executable directory or config directory
+            std::filesystem::path baseDir = std::filesystem::current_path();
+            path = baseDir / path;
+            path = std::filesystem::weakly_canonical(path); // or canonical if you want absolute resolved path
+        }
+
+        int status = gSystem->Load(path.string().c_str());
         if (status < 0) {
-            spdlog::warn("[Pipeline] Failed to load plugin library: {}", libPath);
+            spdlog::warn("[Pipeline] Failed to load plugin library: {}", path.string());
         } else {
-            spdlog::info("[Pipeline] Successfully loaded plugin: {}", libPath);
+            spdlog::info("[Pipeline] Successfully loaded plugin: {}", path.string());
         }
     }
 
