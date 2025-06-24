@@ -25,11 +25,12 @@ void runEventAndPrint(Pipeline& pipeline, const TMEvent& evt, const std::string&
 }
 
 int main(int argc, char** argv) {
-    // Locate config directory
+    // Locate config directory relative to this source file
     std::filesystem::path sourcePath = __FILE__;
     std::filesystem::path configDir = sourcePath.parent_path().parent_path() / "config";
 
     std::vector<std::string> configPaths = {
+        (configDir / "plugins.json").string(),
         (configDir / "logger.json").string(),
         (configDir / "pipeline.json").string()
     };
@@ -46,7 +47,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    // Run pipeline with multiple dummy events and print results
+    // Simulate and run events
     runEventAndPrint(pipeline, makeDummyEvent(1, 100, "FIRST_PAYLOAD"), "Event 1");
     runEventAndPrint(pipeline, makeDummyEvent(2, 200, "SECOND_PAYLOAD"), "Event 2");
     runEventAndPrint(pipeline, makeDummyEvent(3, 300, "THIRD_PAYLOAD"), "Event 3");
