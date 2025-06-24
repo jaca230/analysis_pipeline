@@ -6,9 +6,14 @@
 
 #include <TClass.h>
 #include <TROOT.h>
+#include <TSystem.h>
+
+#include "root_util/root_logger.h"
 
 Pipeline::Pipeline(std::shared_ptr<ConfigManager> configManager)
-    : configManager_(std::move(configManager)) {}
+    : configManager_(std::move(configManager)) {
+        RootLogger::instance(); //Initialize ROOT logger for error handling
+    }
 
 std::shared_ptr<ConfigManager> Pipeline::getConfigManager() const {
     return configManager_;
@@ -84,14 +89,28 @@ bool Pipeline::buildFromConfig() {
         return false;
     }
 
+    // 1. Configure logger first
+    const auto& loggerConfig = configManager_->getLoggerConfig();
+    if (!loggerConfig.empty()) {
+        configureLogger(loggerConfig);
+    }
+
+    // 2. Load plugin libraries
+    const auto& pluginLibs = configManager_->getPluginLibraries();
+    for (const auto& libPath : pluginLibs) {
+        int status = gSystem->Load(libPath.c_str());
+        if (status < 0) {
+            spdlog::warn("[Pipeline] Failed to load plugin library: {}", libPath);
+        } else {
+            spdlog::info("[Pipeline] Successfully loaded plugin: {}", libPath);
+        }
+    }
+
+    // 3. Setup pipeline graph and stages
     const auto& stagesConfig = configManager_->getPipelineStages();
     if (stagesConfig.empty()) {
         spdlog::error("[Pipeline] No pipeline stages loaded.");
         return false;
-    }
-
-    if (!configManager_->getLoggerConfig().raw.empty()) {
-        configureLogger(configManager_->getLoggerConfig().raw);
     }
 
     graph_.reset();
