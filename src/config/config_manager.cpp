@@ -6,7 +6,8 @@ ConfigManager::ConfigManager() : mergedJson_(nlohmann::json::object()) {}
 void ConfigManager::reset() {
     mergedJson_ = nlohmann::json::object();
     pipelineStages_.clear();
-    loggerConfig_.raw.clear();
+    loggerConfig_.clear();
+    pluginLibraries_.clear();
 }
 
 bool ConfigManager::loadFiles(const std::vector<std::string>& filepaths) {
@@ -45,7 +46,8 @@ bool ConfigManager::mergeJson(const nlohmann::json& newJson) {
 
 bool ConfigManager::buildFromMergedConfig() {
     pipelineStages_.clear();
-    loggerConfig_.raw.clear();
+    loggerConfig_.clear();
+    pluginLibraries_.clear();
 
     if (!mergedJson_.contains("pipeline")) {
         std::cerr << "[ConfigManager] Missing 'pipeline' key in config." << std::endl;
@@ -58,8 +60,21 @@ bool ConfigManager::buildFromMergedConfig() {
     }
 
     if (mergedJson_.contains("logger")) {
-        if (!parseLoggerConfig(mergedJson_["logger"])) {
-            std::cerr << "[ConfigManager] Failed to parse logger config." << std::endl;
+        loggerConfig_ = mergedJson_["logger"];
+    }
+
+    if (mergedJson_.contains("plugin_libraries")) {
+        if (!mergedJson_["plugin_libraries"].is_array()) {
+            std::cerr << "[ConfigManager] 'plugin_libraries' must be an array." << std::endl;
+            return false;
+        }
+
+        try {
+            for (const auto& item : mergedJson_["plugin_libraries"]) {
+                pluginLibraries_.emplace_back(item.get<std::string>());
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "[ConfigManager] Exception parsing plugin_libraries: " << e.what() << std::endl;
             return false;
         }
     }
@@ -96,11 +111,6 @@ bool ConfigManager::parsePipelineStages(const nlohmann::json& pipelineJson) {
     return true;
 }
 
-bool ConfigManager::parseLoggerConfig(const nlohmann::json& loggerJson) {
-    loggerConfig_.raw = loggerJson;
-    return true;
-}
-
 bool ConfigManager::validate() const {
     if (pipelineStages_.empty()) {
         std::cerr << "[ConfigManager] Validation failed: no pipeline stages." << std::endl;
@@ -126,14 +136,22 @@ const std::vector<StageConfig>& ConfigManager::getPipelineStages() const {
     return pipelineStages_;
 }
 
-const LoggerConfig& ConfigManager::getLoggerConfig() const {
+const nlohmann::json& ConfigManager::getLoggerConfig() const {
     return loggerConfig_;
+}
+
+const std::vector<std::string>& ConfigManager::getPluginLibraries() const {
+    return pluginLibraries_;
 }
 
 void ConfigManager::setPipelineStages(const std::vector<StageConfig>& stages) {
     pipelineStages_ = stages;
 }
 
-void ConfigManager::setLoggerConfig(const LoggerConfig& loggerConfig) {
-    loggerConfig_ = loggerConfig;
+void ConfigManager::setLoggerConfig(const nlohmann::json& loggerJson) {
+    loggerConfig_ = loggerJson;
+}
+
+void ConfigManager::setPluginLibraries(const std::vector<std::string>& libs) {
+    pluginLibraries_ = libs;
 }

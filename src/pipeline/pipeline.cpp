@@ -4,11 +4,16 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/basic_file_sink.h>
 
-#include <mutex>
+#include <TClass.h>
+#include <TROOT.h>
+#include <TSystem.h>
+
+#include "root_util/root_logger.h"
 
 Pipeline::Pipeline(std::shared_ptr<ConfigManager> configManager)
-    : configManager_(std::move(configManager))
-{}
+    : configManager_(std::move(configManager)) {
+        RootLogger::instance(); //Initialize ROOT logger for error handling
+    }
 
 std::shared_ptr<ConfigManager> Pipeline::getConfigManager() const {
     return configManager_;
@@ -42,59 +47,39 @@ BaseStage* Pipeline::createStageInstance(const std::string& type, const nlohmann
         return nullptr;
     }
 
-    // Pass the PipelineDataProductManager to the stage Init
     stage->Init(params, &dataProductManager_);
-
     return stage;
 }
 
 void Pipeline::configureLogger(const nlohmann::json& loggerConfig) {
     try {
-        // Determine log level
         spdlog::level::level_enum level = spdlog::level::info;
         if (loggerConfig.contains("level")) {
-            std::string levelStr = loggerConfig["level"].get<std::string>();
-            level = spdlog::level::from_str(levelStr);
+            level = spdlog::level::from_str(loggerConfig["level"].get<std::string>());
         }
 
         std::vector<spdlog::sink_ptr> sinks;
-        bool consoleEnabled = true;
-        if (loggerConfig.contains("console_enabled")) {
-            consoleEnabled = loggerConfig["console_enabled"].get<bool>();
-        }
-        if (consoleEnabled) {
+        if (loggerConfig.value("console_enabled", true)) {
             sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
         }
 
-        if (loggerConfig.contains("file_enabled") && loggerConfig["file_enabled"].get<bool>()) {
+        if (loggerConfig.value("file_enabled", false)) {
             if (loggerConfig.contains("file_path")) {
-                std::string file_path = loggerConfig["file_path"].get<std::string>();
-                sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(file_path, true));
+                sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(
+                    loggerConfig["file_path"].get<std::string>(), true));
             }
         }
 
-        std::string loggerName = "pipeline_logger";
-        if (loggerConfig.contains("name")) {
-            const auto& nameFromConfig = loggerConfig["name"].get<std::string>();
-            if (!nameFromConfig.empty()) {
-                loggerName = nameFromConfig;
-            }
-        }
-
+        std::string loggerName = loggerConfig.value("name", "pipeline_logger");
         auto logger = std::make_shared<spdlog::logger>(loggerName, sinks.begin(), sinks.end());
         spdlog::set_default_logger(logger);
 
-        if (loggerConfig.contains("pattern")) {
-            logger->set_pattern(loggerConfig["pattern"].get<std::string>());
-        } else {
-            logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
-        }
-
+        logger->set_pattern(loggerConfig.value("pattern", "[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v"));
         logger->set_level(level);
 
-        spdlog::debug("[Pipeline] Logger '{}' configured from JSON.", loggerName);
+        spdlog::debug("[Pipeline] Logger '{}' configured.", loggerName);
     } catch (const std::exception& e) {
-        spdlog::error("[Pipeline] Exception configuring logger: {}", e.what());
+        spdlog::error("[Pipeline] Logger config error: {}", e.what());
     }
 }
 
@@ -104,83 +89,89 @@ bool Pipeline::buildFromConfig() {
         return false;
     }
 
-    const auto& stages = configManager_->getPipelineStages();
-    if (stages.empty()) {
-        spdlog::error("[Pipeline] No pipeline stages loaded from config.");
-        return false;
+    // 1. Configure logger first
+    const auto& loggerConfig = configManager_->getLoggerConfig();
+    if (!loggerConfig.empty()) {
+        configureLogger(loggerConfig);
     }
 
-    if (!configManager_->getLoggerConfig().raw.empty()) {
-        configureLogger(configManager_->getLoggerConfig().raw);
+    // 2. Load plugin libraries
+    const auto& pluginLibs = configManager_->getPluginLibraries();
+    for (const auto& libPath : pluginLibs) {
+        int status = gSystem->Load(libPath.c_str());
+        if (status < 0) {
+            spdlog::warn("[Pipeline] Failed to load plugin library: {}", libPath);
+        } else {
+            spdlog::info("[Pipeline] Successfully loaded plugin: {}", libPath);
+        }
+    }
+
+    // 3. Setup pipeline graph and stages
+    const auto& stagesConfig = configManager_->getPipelineStages();
+    if (stagesConfig.empty()) {
+        spdlog::error("[Pipeline] No pipeline stages loaded.");
+        return false;
     }
 
     graph_.reset();
     nodes_.clear();
+    stages_.clear();
     incomingCount_.clear();
     startNodes_.clear();
 
-    // Initialize incoming edge counts to zero
-    for (const auto& sc : stages) {
+    for (const auto& sc : stagesConfig) {
         incomingCount_[sc.id] = 0;
     }
 
-    // Create nodes for each stage
-    for (const auto& sc : stages) {
+    for (const auto& sc : stagesConfig) {
         spdlog::debug("[Pipeline] Registering stage id: {} type: {}", sc.id, sc.type);
 
-        BaseStage* stageInstance = createStageInstance(sc.type, sc.parameters);
-        if (!stageInstance) return false;
+        std::unique_ptr<BaseStage> stagePtr(createStageInstance(sc.type, sc.parameters));
+        if (!stagePtr) return false;
+
+        BaseStage* stageRaw = stagePtr.get();
+        stages_[sc.id] = std::move(stagePtr);
 
         auto node = std::make_unique<tbb::flow::continue_node<tbb::flow::continue_msg>>(graph_,
-            [stageInstance](const tbb::flow::continue_msg&) {
-                spdlog::debug("[Pipeline] Executing stage: {}", stageInstance->Name());
-                stageInstance->Process();
+            [stageRaw](const tbb::flow::continue_msg&) {
+                spdlog::debug("[Pipeline] Executing stage: {}", stageRaw->Name());
+                stageRaw->Process();
             });
 
-        nodes_.emplace(sc.id, std::move(node));
+        nodes_[sc.id] = std::move(node);
     }
 
-    // Connect nodes as per pipeline graph configuration
-    spdlog::debug("[Pipeline] Connecting graph edges...");
-    for (const auto& sc : stages) {
-        auto fromNodeIt = nodes_.find(sc.id);
-        if (fromNodeIt == nodes_.end()) {
-            spdlog::error("[Pipeline] Node id '{}' not found.", sc.id);
-            return false;
-        }
+    for (const auto& sc : stagesConfig) {
+        auto& fromNode = nodes_.at(sc.id);
         for (const auto& nextId : sc.next) {
-            auto toNodeIt = nodes_.find(nextId);
-            if (toNodeIt == nodes_.end()) {
-                spdlog::error("[Pipeline] Next node id '{}' not found.", nextId);
+            auto toIt = nodes_.find(nextId);
+            if (toIt == nodes_.end()) {
+                spdlog::error("[Pipeline] Invalid next id: {}", nextId);
                 return false;
             }
             spdlog::debug("[Pipeline] Connecting {} -> {}", sc.id, nextId);
-            make_edge(*(fromNodeIt->second), *(toNodeIt->second));
+            make_edge(*fromNode, *toIt->second);
             incomingCount_[nextId]++;
         }
     }
 
-    // Identify start nodes (those with zero incoming edges)
     for (const auto& [id, count] : incomingCount_) {
         if (count == 0) {
             startNodes_.push_back(id);
         }
     }
-    spdlog::debug("[Pipeline] Found {} start node(s).", startNodes_.size());
 
+    spdlog::debug("[Pipeline] Found {} start node(s).", startNodes_.size());
     return true;
 }
 
 void Pipeline::execute() {
-    spdlog::debug("[Pipeline] Starting execution with {} start node(s).", startNodes_.size());
-
+    spdlog::debug("[Pipeline] Executing pipeline with {} start node(s).", startNodes_.size());
     for (const auto& id : startNodes_) {
         auto it = nodes_.find(id);
         if (it != nodes_.end()) {
-            spdlog::debug("[Pipeline] Triggering start node: {}", id);
             it->second->try_put(tbb::flow::continue_msg());
         }
     }
-
     graph_.wait_for_all();
 }

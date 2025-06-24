@@ -11,7 +11,8 @@ int main(int argc, char** argv) {
 
     std::vector<std::string> configPaths = {
         (configDir / "logger.json").string(),
-        (configDir / "pipeline.json").string()
+        (configDir / "pipeline.json").string(),
+        (configDir / "plugins.json").string()
     };
 
     // Create and load config manager

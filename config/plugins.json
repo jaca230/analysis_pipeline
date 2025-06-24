@@ -1,0 +1,6 @@
+{
+  "plugin_libraries": [
+    "/path/to/libcustom_stage1.so",
+    "/path/to/libcustom_stage2.so"
+  ]
+}

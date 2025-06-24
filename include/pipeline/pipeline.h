@@ -7,6 +7,7 @@
 #include <vector>
 #include <optional>
 #include <tbb/flow_graph.h>
+
 #include "config/config_manager.h"
 #include "stages/base_stage.h"
 #include "data/pipeline_data_product_manager.h" 
@@ -30,6 +31,7 @@ private:
     std::map<std::string, std::unique_ptr<tbb::flow::continue_node<tbb::flow::continue_msg>>> nodes_;
     std::map<std::string, int> incomingCount_;
     std::vector<std::string> startNodes_;
+    std::map<std::string, std::unique_ptr<BaseStage>> stages_;
 
     std::shared_ptr<ConfigManager> configManager_;
 
