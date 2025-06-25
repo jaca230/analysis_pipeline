@@ -14,6 +14,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Add option to control example plugin building
+option(BUILD_EXAMPLE_PLUGIN "Build the example plugin if available" ON)
+
 # Require MIDASSYS environment variable
 if(NOT DEFINED ENV{MIDASSYS})
   message(FATAL_ERROR
@@ -139,12 +142,16 @@ if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
   export(PACKAGE AnalysisPipeline)
 endif()
 
-# Optionally build the example plugin if it exists
+# Optionally build the example plugin if it exists and option is enabled
 set(EXAMPLES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/examples/example_plugin")
 
-if(EXISTS "${EXAMPLES_DIR}/CMakeLists.txt")
-  message(STATUS "Found example_plugin submodule, adding as subdirectory.")
-  add_subdirectory(${EXAMPLES_DIR})
+if(BUILD_EXAMPLE_PLUGIN)
+  if(EXISTS "${EXAMPLES_DIR}/CMakeLists.txt")
+    message(STATUS "Found example_plugin submodule and BUILD_EXAMPLE_PLUGIN=ON, adding as subdirectory.")
+    add_subdirectory(${EXAMPLES_DIR})
+  else()
+    message(WARNING "BUILD_EXAMPLE_PLUGIN=ON but example plugin not found at ${EXAMPLES_DIR}")
+  endif()
 else()
-  message(STATUS "Example plugin submodule not found, skipping example_plugin build.")
+  message(STATUS "Example plugin disabled (BUILD_EXAMPLE_PLUGIN=OFF), skipping example_plugin build.")
 endif()
