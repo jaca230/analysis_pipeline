@@ -17,23 +17,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Add option to control example plugin building
 option(BUILD_EXAMPLE_PLUGIN "Build the example plugin if available" ON)
 
-# Require MIDASSYS environment variable
-if(NOT DEFINED ENV{MIDASSYS})
-  message(FATAL_ERROR
-    "Environment variable MIDASSYS not set.\n"
-    "Please source your MIDAS environment or run the detect_environment.sh script:\n"
-    "  ./scripts/environment/detect_environment.sh\n"
-    "  source ./scripts/environment/.env"
-  )
-endif()
-
-# MIDAS include and lib directories
-set(MIDASSYS_INCLUDE_DIRS
-  $ENV{MIDASSYS}/include
-  $ENV{MIDASSYS}/midasio
-)
-set(MIDASSYS_LIB_DIR $ENV{MIDASSYS}/lib)
-
 # Find ROOT
 find_package(ROOT REQUIRED COMPONENTS Core RIO Tree Hist)
 include(${ROOT_USE_FILE})
@@ -47,11 +30,8 @@ find_package(spdlog REQUIRED)
 # Find nlohmann_json
 find_package(nlohmann_json REQUIRED)
 
-# Find analysis_pipeline_stages - assume installed
-find_package(AnalysisPipelineStages REQUIRED)
-
-# Find unpacker libraries - assume installed
-find_package(unpacker REQUIRED)
+# Use AnalysisPipelineStagesCore instead of AnalysisPipelineStages
+find_package(AnalysisPipelineStagesCore REQUIRED)
 
 # Gather source files, exclude main.cpp
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
@@ -60,7 +40,7 @@ list(FILTER SRC_FILES EXCLUDE REGEX "main\\.cpp$")
 # Main executable source
 set(MAIN_EXECUTABLE_SRC src/main.cpp)
 
-# Create shared library for midas pipeline code
+# Create shared library for analysis pipeline code
 add_library(analysis_pipeline SHARED ${SRC_FILES})
 
 set_target_properties(analysis_pipeline PROPERTIES
@@ -72,9 +52,7 @@ target_compile_features(analysis_pipeline PUBLIC cxx_std_17)
 
 target_include_directories(analysis_pipeline PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<BUILD_INTERFACE:${MIDASSYS_INCLUDE_DIRS}>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/analysis_pipeline>
-  $<INSTALL_INTERFACE:include/midas>
 )
 
 target_link_libraries(analysis_pipeline PUBLIC
@@ -82,13 +60,7 @@ target_link_libraries(analysis_pipeline PUBLIC
   TBB::tbb
   spdlog::spdlog
   nlohmann_json::nlohmann_json
-  AnalysisPipelineStages::analysis_pipeline_stages
-  unpacker::common_unpacking
-  unpacker::common_data_products
-  unpacker::nalu_unpacking
-  unpacker::nalu_data_products
-  ${MIDASSYS_LIB_DIR}/libmfe.a
-  ${MIDASSYS_LIB_DIR}/libmidas.a
+  AnalysisPipelineStagesCore::analysis_pipeline_stages_core
 )
 
 add_library(AnalysisPipeline::analysis_pipeline ALIAS analysis_pipeline)
@@ -96,8 +68,6 @@ add_library(AnalysisPipeline::analysis_pipeline ALIAS analysis_pipeline)
 add_executable(analysis_pipeline_exec ${MAIN_EXECUTABLE_SRC})
 target_link_libraries(analysis_pipeline_exec PRIVATE analysis_pipeline)
 set_target_properties(analysis_pipeline_exec PROPERTIES OUTPUT_NAME analysis_pipeline)
-
-link_directories(${MIDASSYS_LIB_DIR})
 
 # Installation and export only for this package
 if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)

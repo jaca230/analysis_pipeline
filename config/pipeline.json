@@ -1,10 +1,27 @@
 {
   "pipeline": [
     {
-      "id": "stage0",
-      "type": "CustomMidasUnpackerStage",
+      "id": "random_data",
+      "type": "RandomDataGeneratorStage",
       "parameters": {
-        "unpacker_class": "unpackers::NaluEventUnpacker"
+        "product_name": "random_values",
+        "min": 0.0,
+        "max": 10.0,
+        "seed": 1234
+      },
+      "next": ["hist_builder"]
+    },
+    {
+      "id": "hist_builder",
+      "type": "TH1BuilderStage",
+      "parameters": {
+        "input_product": "random_values",
+        "histogram_name": "random_hist",
+        "value_key": "fVal",
+        "title": "Random Data Histogram",
+        "bins": 50,
+        "min": 0.0,
+        "max": 10.0
       },
       "next": []
     }

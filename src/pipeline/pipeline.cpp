@@ -12,8 +12,8 @@
 
 Pipeline::Pipeline(std::shared_ptr<ConfigManager> configManager)
     : configManager_(std::move(configManager)) {
-        RootLogger::instance(); //Initialize ROOT logger for error handling
-    }
+    RootLogger::instance(); // Initialize ROOT logger for error handling
+}
 
 std::shared_ptr<ConfigManager> Pipeline::getConfigManager() const {
     return configManager_;
@@ -28,6 +28,9 @@ void Pipeline::setConfigManager(std::shared_ptr<ConfigManager> configManager) {
 }
 
 BaseStage* Pipeline::createStageInstance(const std::string& type, const nlohmann::json& params) {
+    spdlog::debug("[Pipeline] Creating stage of type '{}'", type);
+    spdlog::debug("[Pipeline] Parameters: {}", params.dump(4));
+
     TClass* cls = TClass::GetClass(type.c_str());
     if (!cls) {
         spdlog::error("[Pipeline] Class '{}' not found in ROOT dictionary.", type);
@@ -50,6 +53,7 @@ BaseStage* Pipeline::createStageInstance(const std::string& type, const nlohmann
     stage->Init(params, &dataProductManager_);
     return stage;
 }
+
 
 void Pipeline::configureLogger(const nlohmann::json& loggerConfig) {
     try {
@@ -100,10 +104,9 @@ bool Pipeline::buildFromConfig() {
     for (const auto& libPath : pluginLibs) {
         std::filesystem::path path(libPath);
         if (path.is_relative()) {
-            // Resolve relative to executable directory or config directory
             std::filesystem::path baseDir = std::filesystem::current_path();
             path = baseDir / path;
-            path = std::filesystem::weakly_canonical(path); // or canonical if you want absolute resolved path
+            path = std::filesystem::weakly_canonical(path);
         }
 
         int status = gSystem->Load(path.string().c_str());
@@ -126,7 +129,7 @@ bool Pipeline::buildFromConfig() {
     stages_.clear();
     incomingCount_.clear();
     startNodes_.clear();
-    midas_unpackers_.clear();
+    input_stages_.clear();
 
     for (const auto& sc : stagesConfig) {
         incomingCount_[sc.id] = 0;
@@ -139,11 +142,13 @@ bool Pipeline::buildFromConfig() {
         if (!stagePtr) return false;
 
         BaseStage* stageRaw = stagePtr.get();
-        stages_[sc.id] = std::move(stagePtr);
 
-        if (auto* unpacker = dynamic_cast<BaseMidasUnpackerStage*>(stageRaw)) {
-            midas_unpackers_.push_back(unpacker);
+        // Register input stages for generic input dispatching
+        if (auto* inputStage = dynamic_cast<BaseInputStage*>(stageRaw)) {
+            registerInputStage(inputStage);
         }
+
+        stages_[sc.id] = std::move(stagePtr);
 
         auto node = std::make_unique<tbb::flow::continue_node<tbb::flow::continue_msg>>(graph_,
             [stageRaw](const tbb::flow::continue_msg&) {
@@ -189,10 +194,14 @@ void Pipeline::execute() {
     graph_.wait_for_all();
 }
 
-void Pipeline::setCurrentEvent(const TMEvent& event) {
-    for (auto* unpacker : midas_unpackers_) {
-        if (unpacker) {
-            unpacker->SetCurrentEvent(event);
+void Pipeline::setInputData(std::any input) {
+    for (auto* stage : input_stages_) {
+        if (stage) {
+            stage->SetInput(input);
         }
     }
+}
+
+void Pipeline::registerInputStage(BaseInputStage* stage) {
+    input_stages_.push_back(stage);
 }

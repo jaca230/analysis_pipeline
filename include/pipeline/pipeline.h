@@ -6,13 +6,13 @@
 #include <memory>
 #include <vector>
 #include <optional>
+#include <any>
 #include <tbb/flow_graph.h>
 
 #include "config/config_manager.h"
 #include "stages/base_stage.h"
-#include "stages/unpacking/base_midas_unpacker_stage.h"
+#include "stages/input/base_input_stage.h"
 #include "data/pipeline_data_product_manager.h" 
-#include "midas.h"
 
 class Pipeline {
 public:
@@ -28,7 +28,8 @@ public:
     // Accessor for the data product manager
     PipelineDataProductManager& getDataProductManager();
 
-    void setCurrentEvent(const TMEvent& event);
+    // Generic input injection method
+    void setInputData(std::any input);
 
 private:
     tbb::flow::graph graph_;
@@ -36,15 +37,18 @@ private:
     std::map<std::string, int> incomingCount_;
     std::vector<std::string> startNodes_;
     std::map<std::string, std::unique_ptr<BaseStage>> stages_;
-    std::vector<BaseMidasUnpackerStage*> midas_unpackers_;
+
+    // Collection of input stages (BaseInputStage*)
+    std::vector<BaseInputStage*> input_stages_;
 
     std::shared_ptr<ConfigManager> configManager_;
 
-    // Use PipelineDataProductManager instead of raw map+mutex
     PipelineDataProductManager dataProductManager_;
 
     BaseStage* createStageInstance(const std::string& type, const nlohmann::json& params);
     void configureLogger(const nlohmann::json& loggerConfig);
+
+    void registerInputStage(BaseInputStage* stage);
 };
 
 #endif // ANALYSISPIPELINE_PIPELINE_H
