@@ -24,12 +24,12 @@ include(CMakePackageConfigHelpers)
 # CPM setup (expect CPM.cmake locally)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CPM.cmake)
 
-# Add spdlog and nlohmann_json with download_only
+# spdlog (header-only)
 CPMAddPackage(
   NAME spdlog
   GITHUB_REPOSITORY gabime/spdlog
   VERSION 1.13.0
-  OPTIONS "SPDLOG_BUILD_TESTS OFF" "SPDLOG_BUILD_EXAMPLE OFF"
+  OPTIONS "SPDLOG_BUILD_EXAMPLES OFF" "SPDLOG_BUILD_TESTS OFF" "SPDLOG_FMT_EXTERNAL OFF"
   DOWNLOAD_ONLY YES
 )
 
@@ -37,9 +37,13 @@ if(spdlog_ADDED)
   add_library(spdlog_header_only INTERFACE)
   target_include_directories(spdlog_header_only INTERFACE
     $<BUILD_INTERFACE:${spdlog_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
   )
+  # Add alias for consistency
+  add_library(spdlog::spdlog ALIAS spdlog_header_only)
 endif()
 
+# nlohmann_json (header-only)
 CPMAddPackage(
   NAME nlohmann_json
   GITHUB_REPOSITORY nlohmann/json
@@ -51,7 +55,10 @@ if(nlohmann_json_ADDED)
   add_library(nlohmann_json_header_only INTERFACE)
   target_include_directories(nlohmann_json_header_only INTERFACE
     $<BUILD_INTERFACE:${nlohmann_json_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
   )
+  # Add alias for consistency
+  add_library(nlohmann_json::nlohmann_json ALIAS nlohmann_json_header_only)
 endif()
 
 # System dependencies
