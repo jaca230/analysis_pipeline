@@ -12,7 +12,8 @@
 #include "config/config_manager.h"
 #include "stages/base_stage.h"
 #include "stages/input/base_input_stage.h"
-#include "data/pipeline_data_product_manager.h" 
+#include "data/pipeline_data_product_manager.h"
+#include "context/input_bundle.h"
 
 class Pipeline {
 public:
@@ -29,7 +30,7 @@ public:
     PipelineDataProductManager& getDataProductManager();
 
     // Generic input injection method
-    void setInputData(std::any input);
+    void setInputData(const InputBundle& input);
 
 private:
     tbb::flow::graph graph_;

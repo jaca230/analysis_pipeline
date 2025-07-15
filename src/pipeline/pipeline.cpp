@@ -194,7 +194,7 @@ void Pipeline::execute() {
     graph_.wait_for_all();
 }
 
-void Pipeline::setInputData(std::any input) {
+void Pipeline::setInputData(const InputBundle& input) {
     for (auto* stage : input_stages_) {
         if (stage) {
             stage->SetInput(input);
