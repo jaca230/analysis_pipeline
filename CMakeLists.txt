@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 3.14)
 
 project(analysis_pipeline VERSION 0.1 LANGUAGES CXX)
 
+# Set the project namespace; overrideable by parent scope if desired
+if(NOT DEFINED PROJECT_NAMESPACE)
+  set(PROJECT_NAMESPACE analysis_pipeline)
+endif()
+
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -80,7 +85,8 @@ set(MAIN_EXECUTABLE_SRC src/main.cpp)
 
 # Create shared library with project name as target
 add_library(${PROJECT_NAME} SHARED ${SRC_FILES})
-add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+add_library(${PROJECT_NAMESPACE}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+add_library(${PROJECT_NAMESPACE}::pipeline ALIAS ${PROJECT_NAME})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
   VERSION ${PROJECT_VERSION}
@@ -95,7 +101,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 target_link_libraries(${PROJECT_NAME} PUBLIC
   ROOT::Core ROOT::RIO ROOT::Tree ROOT::Hist
   TBB::tbb
-  analysis_pipeline_core::analysis_pipeline_core
+  analysis_pipeline::analysis_pipeline_core
   spdlog_header_only
   nlohmann_json_header_only
 )
@@ -127,7 +133,7 @@ if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
 
   install(EXPORT ${PROJECT_NAME}Targets
     FILE ${PROJECT_NAME}Targets.cmake
-    NAMESPACE ${PROJECT_NAME}::
+    NAMESPACE ${PROJECT_NAMESPACE}::
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
   )
 
