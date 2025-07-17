@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(AnalysisPipeline VERSION 0.1 LANGUAGES CXX)
+project(analysis_pipeline VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -24,7 +24,6 @@ include(CMakePackageConfigHelpers)
 # --------------------- CPM Setup ---------------------
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CPM.cmake)
 
-# Use externally-defined versions if set, else fallback
 set(CPM_SPDLOG_VERSION "1.13.0" CACHE STRING "spdlog version")
 set(CPM_NLOHMANN_JSON_VERSION "3.11.3" CACHE STRING "nlohmann_json version")
 
@@ -71,84 +70,88 @@ find_package(ROOT REQUIRED COMPONENTS Core RIO Tree Hist)
 include(${ROOT_USE_FILE})
 
 find_package(TBB REQUIRED)
-find_package(AnalysisPipelineStagesCore REQUIRED)
+find_package(analysis_pipeline_core REQUIRED)
 
 # Gather source files
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 list(FILTER SRC_FILES EXCLUDE REGEX "main\\.cpp$")
 set(MAIN_EXECUTABLE_SRC src/main.cpp)
 
-# Create shared library
-add_library(analysis_pipeline SHARED ${SRC_FILES})
-add_library(AnalysisPipeline::analysis_pipeline ALIAS analysis_pipeline)
+# Create shared library with variable names
+set(LIBRARY_NAME "${PROJECT_NAME_LOWER}")
+string(TOLOWER "${PROJECT_NAME}" PROJECT_NAME_LOWER)
 
-set_target_properties(analysis_pipeline PROPERTIES
+add_library(${PROJECT_NAME_LOWER} SHARED ${SRC_FILES})
+add_library(${PROJECT_NAME}::${PROJECT_NAME_LOWER} ALIAS ${PROJECT_NAME_LOWER})
+
+set_target_properties(${PROJECT_NAME_LOWER} PROPERTIES
   VERSION ${PROJECT_VERSION}
   SOVERSION 0
 )
 
-target_include_directories(analysis_pipeline PUBLIC
+target_include_directories(${PROJECT_NAME_LOWER} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-target_link_libraries(analysis_pipeline PUBLIC
+target_link_libraries(${PROJECT_NAME_LOWER} PUBLIC
   ROOT::Core ROOT::RIO ROOT::Tree ROOT::Hist
   TBB::tbb
-  AnalysisPipelineStagesCore::analysis_pipeline_stages_core
+  analysis_pipeline_core::analysis_pipeline_core
   spdlog_header_only
   nlohmann_json_header_only
 )
 
 # Executable
-add_executable(analysis_pipeline_exec ${MAIN_EXECUTABLE_SRC})
-target_link_libraries(analysis_pipeline_exec PRIVATE analysis_pipeline)
-set_target_properties(analysis_pipeline_exec PROPERTIES OUTPUT_NAME analysis_pipeline)
+add_executable(${PROJECT_NAME_LOWER}_exec ${MAIN_EXECUTABLE_SRC})
+target_link_libraries(${PROJECT_NAME_LOWER}_exec PRIVATE ${PROJECT_NAME_LOWER})
+set_target_properties(${PROJECT_NAME_LOWER}_exec PROPERTIES OUTPUT_NAME ${PROJECT_NAME_LOWER})
 
 # Install/export logic only if top-level project
 if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
 
-  install(TARGETS analysis_pipeline
-    EXPORT AnalysisPipelineTargets
+  install(TARGETS ${PROJECT_NAME_LOWER}
+    EXPORT ${PROJECT_NAME}Targets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/analysis_pipeline
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME_LOWER}
   )
 
   install(TARGETS spdlog_header_only nlohmann_json_header_only
-    EXPORT AnalysisPipelineTargets
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/analysis_pipeline
+    EXPORT ${PROJECT_NAME}Targets
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME_LOWER}
   )
 
   install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/analysis_pipeline
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME_LOWER}
   )
 
-  install(EXPORT AnalysisPipelineTargets
-    FILE AnalysisPipelineTargets.cmake
-    NAMESPACE AnalysisPipeline::
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AnalysisPipeline
+  install(EXPORT ${PROJECT_NAME}Targets
+    FILE ${PROJECT_NAME}Targets.cmake
+    NAMESPACE ${PROJECT_NAME}::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
   )
 
   write_basic_package_version_file(
-    ${CMAKE_CURRENT_BINARY_DIR}/AnalysisPipelineConfigVersion.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
     VERSION ${PROJECT_VERSION}
     COMPATIBILITY SameMajorVersion
   )
 
   configure_package_config_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Config.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/AnalysisPipelineConfig.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AnalysisPipeline
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
   )
 
   install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/AnalysisPipelineConfig.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/AnalysisPipelineConfigVersion.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AnalysisPipeline
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
   )
 
-  export(PACKAGE AnalysisPipeline)
+  export(PACKAGE ${PROJECT_NAME})
 endif()
 
 # Optional example plugin
