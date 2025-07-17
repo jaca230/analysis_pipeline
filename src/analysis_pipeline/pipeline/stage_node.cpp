@@ -1,4 +1,4 @@
-#include "pipeline/stage_node.h"
+#include "analysis_pipeline/pipeline/stage_node.h"
 
 StageNode::StageNode(tbb::flow::graph& g, BaseStage* stage)
     : stage_(stage)

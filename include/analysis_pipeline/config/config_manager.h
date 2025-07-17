@@ -5,7 +5,7 @@
 #include <vector>
 #include <set>
 #include <nlohmann/json.hpp>
-#include "config/config_parser.h"
+#include "analysis_pipeline/config/config_parser.h"
 
 struct StageConfig {
     std::string id;

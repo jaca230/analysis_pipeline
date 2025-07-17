@@ -72,29 +72,27 @@ include(${ROOT_USE_FILE})
 find_package(TBB REQUIRED)
 find_package(analysis_pipeline_core REQUIRED)
 
-# Gather source files
+# Gather source files, excluding main.cpp
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 list(FILTER SRC_FILES EXCLUDE REGEX "main\\.cpp$")
+
 set(MAIN_EXECUTABLE_SRC src/main.cpp)
 
-# Create shared library with variable names
-set(LIBRARY_NAME "${PROJECT_NAME_LOWER}")
-string(TOLOWER "${PROJECT_NAME}" PROJECT_NAME_LOWER)
+# Create shared library with project name as target
+add_library(${PROJECT_NAME} SHARED ${SRC_FILES})
+add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
-add_library(${PROJECT_NAME_LOWER} SHARED ${SRC_FILES})
-add_library(${PROJECT_NAME}::${PROJECT_NAME_LOWER} ALIAS ${PROJECT_NAME_LOWER})
-
-set_target_properties(${PROJECT_NAME_LOWER} PROPERTIES
+set_target_properties(${PROJECT_NAME} PROPERTIES
   VERSION ${PROJECT_VERSION}
   SOVERSION 0
 )
 
-target_include_directories(${PROJECT_NAME_LOWER} PUBLIC
+target_include_directories(${PROJECT_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-target_link_libraries(${PROJECT_NAME_LOWER} PUBLIC
+target_link_libraries(${PROJECT_NAME} PUBLIC
   ROOT::Core ROOT::RIO ROOT::Tree ROOT::Hist
   TBB::tbb
   analysis_pipeline_core::analysis_pipeline_core
@@ -102,29 +100,29 @@ target_link_libraries(${PROJECT_NAME_LOWER} PUBLIC
   nlohmann_json_header_only
 )
 
-# Executable
-add_executable(${PROJECT_NAME_LOWER}_exec ${MAIN_EXECUTABLE_SRC})
-target_link_libraries(${PROJECT_NAME_LOWER}_exec PRIVATE ${PROJECT_NAME_LOWER})
-set_target_properties(${PROJECT_NAME_LOWER}_exec PROPERTIES OUTPUT_NAME ${PROJECT_NAME_LOWER})
+# Executable target
+add_executable(${PROJECT_NAME}_exec ${MAIN_EXECUTABLE_SRC})
+target_link_libraries(${PROJECT_NAME}_exec PRIVATE ${PROJECT_NAME})
+set_target_properties(${PROJECT_NAME}_exec PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 
-# Install/export logic only if top-level project
+# Install/export logic if top-level project
 if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
 
-  install(TARGETS ${PROJECT_NAME_LOWER}
+  install(TARGETS ${PROJECT_NAME}
     EXPORT ${PROJECT_NAME}Targets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME_LOWER}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   )
 
   install(TARGETS spdlog_header_only nlohmann_json_header_only
     EXPORT ${PROJECT_NAME}Targets
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME_LOWER}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   )
 
   install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME_LOWER}
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   )
 
   install(EXPORT ${PROJECT_NAME}Targets

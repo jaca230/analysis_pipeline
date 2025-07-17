@@ -1,4 +1,4 @@
-#include "pipeline/pipeline.h"
+#include "analysis_pipeline/pipeline/pipeline.h"
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -8,7 +8,7 @@
 #include <TROOT.h>
 #include <TSystem.h>
 
-#include "root_util/root_logger.h"
+#include "analysis_pipeline/root_util/root_logger.h"
 
 Pipeline::Pipeline(std::shared_ptr<ConfigManager> configManager)
     : configManager_(std::move(configManager)) {

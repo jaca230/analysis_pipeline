@@ -1,4 +1,4 @@
-#include "config/config_parser.h"
+#include "analysis_pipeline/config/config_parser.h"
 #include <fstream>
 #include <iostream>
 

@@ -1,8 +1,8 @@
 #include <iostream>
 #include <filesystem>
 #include <memory>
-#include "config/config_manager.h"
-#include "pipeline/pipeline.h"
+#include "analysis_pipeline/config/config_manager.h"
+#include "analysis_pipeline/pipeline/pipeline.h"
 #include <nlohmann/json.hpp>
 
 int main(int argc, char** argv) {

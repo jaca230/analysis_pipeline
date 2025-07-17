@@ -9,11 +9,11 @@
 #include <any>
 #include <tbb/flow_graph.h>
 
-#include "config/config_manager.h"
-#include "analysis_pipeline_core/stages/base_stage.h"
-#include "analysis_pipeline_core/stages/input/base_input_stage.h"
-#include "analysis_pipeline_core/data/pipeline_data_product_manager.h"
-#include "analysis_pipeline_core/context/input_bundle.h"
+#include "analysis_pipeline/config/config_manager.h"
+#include "analysis_pipeline/core/stages/base_stage.h"
+#include "analysis_pipeline/core/stages/input/base_input_stage.h"
+#include "analysis_pipeline/core/data/pipeline_data_product_manager.h"
+#include "analysis_pipeline/core/context/input_bundle.h"
 
 class Pipeline {
 public:
