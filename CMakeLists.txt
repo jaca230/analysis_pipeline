@@ -29,47 +29,6 @@ include(CMakePackageConfigHelpers)
 # --------------------- CPM Setup ---------------------
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CPM.cmake)
 
-set(CPM_SPDLOG_VERSION "1.13.0" CACHE STRING "spdlog version")
-set(CPM_NLOHMANN_JSON_VERSION "3.11.3" CACHE STRING "nlohmann_json version")
-
-# --------------------- spdlog ---------------------
-CPMAddPackage(
-  NAME spdlog
-  GITHUB_REPOSITORY gabime/spdlog
-  VERSION ${CPM_SPDLOG_VERSION}
-  OPTIONS
-    "SPDLOG_BUILD_EXAMPLES OFF"
-    "SPDLOG_BUILD_TESTS OFF"
-    "SPDLOG_FMT_EXTERNAL OFF"
-  DOWNLOAD_ONLY YES
-)
-
-if(spdlog_ADDED)
-  add_library(spdlog_header_only INTERFACE)
-  target_include_directories(spdlog_header_only INTERFACE
-    $<BUILD_INTERFACE:${spdlog_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-  )
-  add_library(spdlog::spdlog ALIAS spdlog_header_only)
-endif()
-
-# --------------------- nlohmann_json ---------------------
-CPMAddPackage(
-  NAME nlohmann_json
-  GITHUB_REPOSITORY nlohmann/json
-  VERSION ${CPM_NLOHMANN_JSON_VERSION}
-  DOWNLOAD_ONLY YES
-)
-
-if(nlohmann_json_ADDED)
-  add_library(nlohmann_json_header_only INTERFACE)
-  target_include_directories(nlohmann_json_header_only INTERFACE
-    $<BUILD_INTERFACE:${nlohmann_json_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-  )
-  add_library(nlohmann_json::nlohmann_json ALIAS nlohmann_json_header_only)
-endif()
-
 # System dependencies
 find_package(ROOT REQUIRED COMPONENTS Core RIO Tree Hist)
 include(${ROOT_USE_FILE})
@@ -102,8 +61,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   ROOT::Core ROOT::RIO ROOT::Tree ROOT::Hist
   TBB::tbb
   analysis_pipeline::analysis_pipeline_core
-  spdlog_header_only
-  nlohmann_json_header_only
+  analysis_pipeline::spdlog_header_only
+  analysis_pipeline::nlohmann_json_header_only
 )
 
 # Executable target
@@ -119,11 +78,6 @@ if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-  )
-
-  install(TARGETS spdlog_header_only nlohmann_json_header_only
-    EXPORT ${PROJECT_NAME}Targets
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   )
 
