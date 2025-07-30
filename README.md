@@ -29,9 +29,7 @@ The framework consists of several key components:
 - **C++17** compatible compiler
 - **[ROOT](https://root.cern/)** (Core, Tree, RIO, Hist components)
 - **[Intel TBB](https://github.com/oneapi-src/oneTBB)** for parallel execution
-- **[spdlog](https://github.com/gabime/spdlog)** for logging
-- **[nlohmann/json](https://github.com/nlohmann/json)** for JSON parsing
-- **[analysis_pipeline_stages](https://github.com/jaca230/analysis_pipeline_stages)** for base stage classes
+- **[analysis_pipeline_core](https://github.com/jaca230/analysis_pipeline_core)** for base stage classes and other header only libraries
 - **CMake 3.14+**
 
 ## 🚀 Quick Start
