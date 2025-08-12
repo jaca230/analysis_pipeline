@@ -7,11 +7,13 @@
 #include <TClass.h>
 #include <TROOT.h>
 #include <TSystem.h>
+#include <ROOT/TThreadSafety.h>
 
 #include "analysis_pipeline/root_util/root_logger.h"
 
 Pipeline::Pipeline(std::shared_ptr<ConfigManager> configManager)
     : configManager_(std::move(configManager)) {
+    ROOT::EnableThreadSafety();  // Enable ROOT internal thread safety
     RootLogger::instance(); // Initialize ROOT logger for error handling
 }
 
