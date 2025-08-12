@@ -7,7 +7,6 @@
 #include <TClass.h>
 #include <TROOT.h>
 #include <TSystem.h>
-#include <ROOT/TThreadSafety.h>
 
 #include "analysis_pipeline/root_util/root_logger.h"
 
