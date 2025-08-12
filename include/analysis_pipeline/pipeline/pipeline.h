@@ -32,6 +32,9 @@ public:
     // Generic input injection method
     void setInputData(const InputBundle& input);
 
+    // Setter for conditional ROOT thread safety enabling
+    void setEnableThreadSafetyIfNeeded(bool enable);
+
 private:
     tbb::flow::graph graph_;
     std::map<std::string, std::unique_ptr<tbb::flow::continue_node<tbb::flow::continue_msg>>> nodes_;
@@ -46,10 +49,16 @@ private:
 
     PipelineDataProductManager dataProductManager_;
 
+    // Controls whether to enable ROOT::EnableThreadSafety() based on parallelism detection
+    bool enable_thread_safety_if_needed_ = true;
+
     BaseStage* createStageInstance(const std::string& type, const nlohmann::json& params);
     void configureLogger(const nlohmann::json& loggerConfig);
 
     void registerInputStage(BaseInputStage* stage);
+
+    // Internal helper to enable ROOT thread safety if conditions are met
+    void enableRootThreadSafetyIfNeeded();
 };
 
 #endif // ANALYSISPIPELINE_PIPELINE_H

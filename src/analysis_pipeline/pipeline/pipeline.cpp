@@ -11,8 +11,9 @@
 #include "analysis_pipeline/root_util/root_logger.h"
 
 Pipeline::Pipeline(std::shared_ptr<ConfigManager> configManager)
-    : configManager_(std::move(configManager)) {
-    ROOT::EnableThreadSafety();  // Enable ROOT internal thread safety
+    : configManager_(std::move(configManager)),
+      enable_thread_safety_if_needed_(true) // default true
+{
     RootLogger::instance(); // Initialize ROOT logger for error handling
 }
 
@@ -26,6 +27,10 @@ PipelineDataProductManager& Pipeline::getDataProductManager() {
 
 void Pipeline::setConfigManager(std::shared_ptr<ConfigManager> configManager) {
     configManager_ = std::move(configManager);
+}
+
+void Pipeline::setEnableThreadSafetyIfNeeded(bool enable) {
+    enable_thread_safety_if_needed_ = enable;
 }
 
 BaseStage* Pipeline::createStageInstance(const std::string& type, const nlohmann::json& params) {
@@ -54,7 +59,6 @@ BaseStage* Pipeline::createStageInstance(const std::string& type, const nlohmann
     stage->Init(params, &dataProductManager_);
     return stage;
 }
-
 
 void Pipeline::configureLogger(const nlohmann::json& loggerConfig) {
     try {
@@ -132,19 +136,26 @@ bool Pipeline::buildFromConfig() {
     startNodes_.clear();
     input_stages_.clear();
 
+    // Initialize incoming counts
     for (const auto& sc : stagesConfig) {
         incomingCount_[sc.id] = 0;
     }
 
+    // Detect parallelism flag
+    bool parallelismDetected = false;
+
     for (const auto& sc : stagesConfig) {
         spdlog::debug("[Pipeline] Registering stage id: {} type: {}", sc.id, sc.type);
+
+        if (sc.next.size() > 1) {
+            parallelismDetected = true;  // branching detected
+        }
 
         std::unique_ptr<BaseStage> stagePtr(createStageInstance(sc.type, sc.parameters));
         if (!stagePtr) return false;
 
         BaseStage* stageRaw = stagePtr.get();
 
-        // Register input stages for generic input dispatching
         if (auto* inputStage = dynamic_cast<BaseInputStage*>(stageRaw)) {
             registerInputStage(inputStage);
         }
@@ -181,8 +192,29 @@ bool Pipeline::buildFromConfig() {
     }
 
     spdlog::debug("[Pipeline] Found {} start node(s).", startNodes_.size());
+
+    // Refine parallelism detection: multiple start nodes implies parallelism
+    if (startNodes_.size() > 1) {
+        parallelismDetected = true;
+    }
+
+    // Enable ROOT thread safety only if enabled and parallelism detected
+    if (enable_thread_safety_if_needed_) {
+        static bool rootThreadSafetyEnabled = false;
+        if (parallelismDetected && !rootThreadSafetyEnabled) {
+            ROOT::EnableThreadSafety();
+            spdlog::debug("[Pipeline] ROOT::EnableThreadSafety() called due to detected parallelism.");
+            rootThreadSafetyEnabled = true;
+        } else if (!parallelismDetected) {
+            spdlog::debug("[Pipeline] No parallelism detected; ROOT thread safety not enabled.");
+        }
+    } else {
+        spdlog::debug("[Pipeline] ROOT thread safety enabling disabled by flag.");
+    }
+
     return true;
 }
+
 
 void Pipeline::execute() {
     spdlog::debug("[Pipeline] Executing pipeline with {} start node(s).", startNodes_.size());
