@@ -3,6 +3,7 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/basic_file_sink.h>
+#include <chrono>
 
 #include <TClass.h>
 #include <TROOT.h>
@@ -165,7 +166,7 @@ bool Pipeline::buildFromConfig() {
         auto node = std::make_unique<tbb::flow::continue_node<tbb::flow::continue_msg>>(graph_,
             [stageRaw](const tbb::flow::continue_msg&) {
                 spdlog::debug("[Pipeline] Executing stage: {}", stageRaw->Name());
-                stageRaw->Process();
+                stageRaw->Run();
             });
 
         nodes_[sc.id] = std::move(node);
