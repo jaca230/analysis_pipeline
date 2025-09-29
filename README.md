@@ -126,7 +126,7 @@ Create three JSON configuration files:
 ./scripts/run.sh
 ```
 
-## 📖 Configuration Guide
+## Configuration Guide
 
 ### Pipeline Configuration
 
