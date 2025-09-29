@@ -6,17 +6,17 @@
 
 A modular, high-performance C++ framework for building and executing data analysis pipelines. Originally designed for processing MIDAS events into ROOT data products, AnalysisPipeline provides a flexible, JSON-configurable system for creating complex data processing workflows. Aimed to provide a lightweight, portable, flexible alternative to [Gaudi](https://gaudi.web.cern.ch/gaudi/).
 
-## ✨ Key Features
+##  Key Features
 
-- **📋 JSON Configuration**: Define entire pipelines through simple JSON files - no code recompilation needed
-- **🔗 Directed Acyclic Graphs**: Build complex workflows with branching, merging, and parallel execution paths
-- **🚀 Parallel Execution**: Leverages Intel TBB for high-performance, thread-safe parallel processing
-- **🔌 Plugin Architecture**: Dynamically load custom processing stages at runtime using ROOT's reflection system
-- **🌳 ROOT Integration**: Native support for ROOT data structures with thread-safe `TTree` access
-- **📊 Built-in Data Products**: Automatic serialization and management of analysis results
-- **🔧 Flexible Logging**: Comprehensive logging with configurable levels and outputs via spdlog
+- ** JSON Configuration**: Define entire pipelines through simple JSON files - no code recompilation needed
+- ** Directed Acyclic Graphs**: Build complex workflows with branching, merging, and parallel execution paths
+- ** Parallel Execution**: Leverages Intel TBB for high-performance, thread-safe parallel processing
+- ** Plugin Architecture**: Dynamically load custom processing stages at runtime using ROOT's reflection system
+- ** ROOT Integration**: Native support for ROOT data structures with thread-safe `TTree` access
+- ** Built-in Data Products**: Automatic serialization and management of analysis results
+- ** Flexible Logging**: Comprehensive logging with configurable levels and outputs via spdlog
 
-## 🏗️ Architecture
+## Architecture
 
 The framework consists of several key components:
 
@@ -24,7 +24,7 @@ The framework consists of several key components:
 - **ConfigManager**: Handles JSON configuration parsing and validation
 - **Plugin System**: Dynamic loading of custom stages via ROOT dictionaries
 
-## 📋 Requirements
+## Requirements
 
 - **C++17** compatible compiler
 - **[ROOT](https://root.cern/)** (Core, Tree, RIO, Hist components)
@@ -32,7 +32,7 @@ The framework consists of several key components:
 - **[analysis_pipeline_core](https://github.com/jaca230/analysis_pipeline_core)** for base stage classes and other header only libraries
 - **CMake 3.14+**
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Clone and Build
 
@@ -142,7 +142,7 @@ Each stage in the pipeline must specify:
 Specify shared libraries containing custom stages. Libraries are loaded using ROOT's `gSystem->Load()` mechanism.
 
 
-## 🏃‍♂️ Example Workflows
+## Example Workflows
 
 ### Simple Linear Pipeline
 ```
@@ -162,7 +162,7 @@ Input → Filter → Analysis1 → Combiner → Output
              ↘ Analysis3 ↗
 ```
 
-## 🔧 Advanced Features
+## Advanced Features
 
 ### Thread-Safe Data Sharing
 All stages can safely access shared data products through the `PipelineDataProductManager`, which handles thread synchronization automatically.
@@ -176,13 +176,13 @@ The framework automatically parallelizes independent stages using Intel TBB's fl
 ### JSON Serialization
 All data products can be automatically serialized to JSON for debugging, monitoring, or data export.
 
-## 📊 Performance
+## Performance
 
 - **Parallel Processing**: Automatic parallelization of independent stages
 - **Memory Efficient**: Shared data products reduce memory overhead
 - **Scalable**: Handles large datasets with configurable memory management
 - **Low Latency**: Minimal overhead for stage transitions
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
