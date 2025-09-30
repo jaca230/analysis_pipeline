@@ -4,6 +4,8 @@
 [![License](https://img.shields.io/badge/license-MIT-green)]()
 [![CMake](https://img.shields.io/badge/CMake-3.14+-blue)]()
 
+See the [Wiki](https://github.com/jaca230/analysis_pipeline/wiki) for guides and examples.
+
 A modular, high-performance C++ framework for building and executing data analysis pipelines. Originally designed for processing MIDAS events into ROOT data products, AnalysisPipeline provides a flexible, JSON-configurable system for creating complex data processing workflows. Aimed to provide a lightweight, portable, flexible alternative to [Gaudi](https://gaudi.web.cern.ch/gaudi/).
 
 ##  Key Features
